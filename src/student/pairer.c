@@ -4,13 +4,12 @@
 
 A função recebe três parâmetros:
 
-*pairer — uma estrutura que serve como memória entre as duas chamadas. Ela contém has_entry, um flag booleano que indica se já existe um evento de entrada salvo, e entry,
-* que armazena o próprio evento de entrada com todos os seus campos: pid, syscall_no e args.
+*pairer — uma estrutura que serve como memória. Ela contém has_entry, um flag booleano que indica se já existe um evento de entrada salvo, e entry,
+* que armazena o próprio evento de entrada.
 *ev — o evento atual que chegou, podendo ser de entrada ou de saída. Na entrada, carrega pid, syscall_no e args. Na saída, carrega o valor de retorno em ev->ret e entering igual a 0.
 *out — o evento de saída completo que a função deve montar quando as duas metades estiverem disponíveis.
-*O fluxo funciona assim: na primeira chamada, quando ev->entering é 1, os dados do evento de entrada são salvos em pairer->entry e has_entry é marcado como 1.
-*Na segunda chamada, quando ev->entering é 0, a função verifica se has_entry é 1, copia o evento de entrada salvo para out — trazendo pid, syscall_no e args — 
-*e então sobrescreve out->ret e out->entering com os valores vindos do ev atual, completando o par.
+*O fluxo funciona assim: na primeira chamada, quando ev->entering é 1, os dados do evento de entrada são salvos em pairer->entry e has_entry é marcado como 1, indicando uma entrada para um evento .
+*Na segunda chamada, quando ev->entering é 0, a função verifica se has_entry é 1, se sim indica que o evento ja possui entrada, então copia o evento de entrada salvo para out, completando o evento com entrada e retorno;
 */
 
 int student_pair_syscall(struct syscall_pairer *pairer,
@@ -30,14 +29,14 @@ int student_pair_syscall(struct syscall_pairer *pairer,
         {
             *out = pairer->entry ; // to passando os valores tanto de pid, syscallno e de argcs para terem o valor de se tem entrada ou nao pela variavel has->entry(que é booleano pelo que entendi)
             out -> ret = ev ->  ret ; // sobrescrevendo as variaveis de entrada que nesse caso é 0 por conta de eu estar retornando um valor, e tambem a variavel de retorno de out, para ele conseguir retornar algo a partir do proprio evento;
-            out -> entering =  ev-> entering ;
+            out -> entering =  ev-> entering ; // passo o flag de entrada para o evento completo.
             pairer -> has_entry = 0; // volto essa varivel para 0 pois o evento de entrada e saida aconteceram, entao é como se tivesse reiniciado os valores
             return 1;
 
         }
     
     {
-        perror("Erro no tratamento de eventos de retorno ou de inserção ");
+        perror("Erro no tratamento de eventos de retorno ou de inserção "); // tratamento de erro caso o flag de entering seja diferente de 1 ou de 0 ;
         return -1;
 
     }
