@@ -36,6 +36,8 @@ static void fill_event_from_regs(pid_t pid,
 
 
 static pid_t launch_tracee(char *const argv[])
+
+// FEITO SEMANA 2
 {
     int status;
     pid_t pid = fork();
@@ -63,7 +65,6 @@ static pid_t launch_tracee(char *const argv[])
 
 static int wait_for_initial_stop(pid_t child)
 {
-
     int status;
     if (waitpid(child,&status,0) == -1){
         perror("Erro na espera por processo filho");
@@ -76,6 +77,8 @@ static int wait_for_initial_stop(pid_t child)
         return 0;
     }
     return -1;
+
+    // FEITO
     
     /*
 
