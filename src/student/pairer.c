@@ -1,11 +1,6 @@
 #include "student_api.h"
 
-int student_pair_syscall(struct syscall_pairer *pairer,
-                         const struct syscall_event *ev,
-                         struct syscall_event *out)
-{
-    if(ev->entering == 1)
-/* esse bagui é dificil de entender, basicamente tenho 3 estrutura, -> pairer que possui tanto o flag de entrada(ou seja, se tem entrada ou nao para o evento e )Aqui está o texto ajustado:
+/*
 
 A função recebe três parâmetros:
 
@@ -17,6 +12,12 @@ A função recebe três parâmetros:
 *Na segunda chamada, quando ev->entering é 0, a função verifica se has_entry é 1, copia o evento de entrada salvo para out — trazendo pid, syscall_no e args — 
 *e então sobrescreve out->ret e out->entering com os valores vindos do ev atual, completando o par.
 */
+
+int student_pair_syscall(struct syscall_pairer *pairer,
+                         const struct syscall_event *ev,
+                         struct syscall_event *out)
+{
+    if(ev->entering == 1)
   {
         pairer-> entry = *ev; // passo tudo que esta armazenado no evento para a estrutura de entrada
         pairer->has_entry = 1; // ajusto o flag de possuir entrada para 1, ja que mandei os valores para entry
