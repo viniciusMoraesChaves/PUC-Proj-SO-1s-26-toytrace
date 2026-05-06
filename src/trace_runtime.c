@@ -44,7 +44,7 @@ static pid_t launch_tracee(char *const argv[])
 
     if(pid == -1)
     {
-        perror("Erro na criação do processo.");
+        perror("Erro na criação do processo.")
         return -1;
     }
 
@@ -93,6 +93,15 @@ static int wait_for_initial_stop(pid_t child)
 
 static int configure_trace_options(pid_t child)
 {
+    int status ;
+    ptrace(PTRACE_SETOPTIONS, child, NULL, PTRACE_O_TRACESYSGOOD);
+    if(WTOPSIG(status))
+    {
+        if(WTOPSIG(status)) == 0 )
+        {
+            //talvez eu tenha que retornar que nao é uma syscall, mas o que manipular aqui?
+    }
+    }
     /*
      * TODO Semana 3:
      *
@@ -105,6 +114,12 @@ static int configure_trace_options(pid_t child)
 
 static int resume_until_next_syscall(pid_t child, int signal_to_deliver)
 {
+    int status;
+    ptrace(PTRACE_SYSCALL,child,NULL,signal_to_deliver);
+
+    {
+        
+    }
     /*
      * TODO Semana 3:
      *
@@ -117,9 +132,42 @@ static int resume_until_next_syscall(pid_t child, int signal_to_deliver)
     return -1;
 }
 
-static int wait_for_syscall_stop(pid_t child, int *status)
+
+    static int wait_for_syscall_stop(pid_t child, int *status)
 {
-    /*
+    if(waitpid(child,status,0) == -1) // Primeira verificação de erro na espera
+    {
+        perror("Erro na espera por processo filho com waipid()");
+        return -1;
+    }
+
+
+    if(WIFEXITED(*status)){ // returns true if the child terminated normally ()
+        printf("O filho terminou normalmente sua execução\n");
+        return 0;
+    }
+
+    if(WIFSIGNALED(*status)) 
+    {
+        printf("O filho terminou por conta de um sinal\n");
+        return 0;
+    }
+
+    if(WIFSTOPPED(*status))
+    {
+        printf("Processo esta parado");
+        if(WSTOPSIG(*status) &  0x80)
+    {
+        printf("O processo foi paralisado por conta de uma syscall ");
+        return 1;
+    }
+    return 0;
+  
+    }
+}
+    
+    
+    /* FEITO 
      * TODO Semana 3:
      *
      * Espere o filho com waitpid().
