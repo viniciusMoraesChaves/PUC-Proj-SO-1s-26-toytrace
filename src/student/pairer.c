@@ -1,17 +1,6 @@
 
 #include "student_api.h"
 
-
-A função recebe três parâmetros:
-
-*pairer — uma estrutura que serve como memória. Ela contém has_entry, um flag booleano que indica se já existe um evento de entrada salvo, e entry,
-* que armazena o próprio evento de entrada.
-*ev — o evento atual que chegou, podendo ser de entrada ou de saída. Na entrada, carrega pid, syscall_no e args. Na saída, carrega o valor de retorno em ev->ret e entering igual a 0.
-*out — o evento de saída completo que a função deve montar quando as duas metades estiverem disponíveis.
-*O fluxo funciona assim: na primeira chamada, quando ev->entering é 1, os dados do evento de entrada são salvos em pairer->entry e has_entry é marcado como 1, indicando uma entrada para um evento .
-*Na segunda chamada, quando ev->entering é 0, a função verifica se has_entry é 1, se sim indica que o evento ja possui entrada, então copia o evento de entrada salvo para out, completando o evento com entrada e retorno;
-*/
-
 int student_pair_syscall(struct syscall_pairer *pairer,
                          const struct syscall_event *ev,
                          struct syscall_event *out)
