@@ -93,34 +93,32 @@ static int wait_for_initial_stop(pid_t child)
 
 static int configure_trace_options(pid_t child)
 {
-    int status ;
-    ptrace(PTRACE_SETOPTIONS, child, NULL, PTRACE_O_TRACESYSGOOD);
-    if(WTOPSIG(status))
-    {
-        if(WTOPSIG(status)) == 0 )
-        {
-            //talvez eu tenha que retornar que nao é uma syscall, mas o que manipular aqui?
+    //se SIGTRAP for recebido e o bit 0x80 estiver setado, entao é uma parada de syscall
+    if (ptrace(PTRACE_SETOPTIONS, child, NULL, PTRACE_O_TRACESYSGOOD) == -1) {
+        fprintf(stderr, "erro: TODO Semana 3: implementar configure_trace_options()\n");
+        return -1;
     }
-    }
+    return 0;
+
+    // FEITO
     /*
      * TODO Semana 3:
      *
      * Configure PTRACE_O_TRACESYSGOOD com PTRACE_SETOPTIONS.
      * Isso ajuda a diferenciar paradas de syscall de outros sinais.
      */
-    fprintf(stderr, "erro: TODO Semana 3: implementar configure_trace_options()\n");
-    return -1;
 }
 
 static int resume_until_next_syscall(pid_t child, int signal_to_deliver)
 {
-    int status;
-    ptrace(PTRACE_SYSCALL,child,NULL,signal_to_deliver);
-
-    {
-        
+    if (ptrace(PTRACE_SYSCALL, child, NULL, signal_to_deliver) == -1) {
+        fprintf(stderr, "erro: TODO Semana 3: implementar resume_until_next_syscall()\n");
+        return -1;
     }
-    /*
+    return 0;
+
+    //FEITO
+     /*
      * TODO Semana 3:
      *
      * Use ptrace(PTRACE_SYSCALL, ...) para deixar o filho executar ate a
@@ -128,8 +126,6 @@ static int resume_until_next_syscall(pid_t child, int signal_to_deliver)
      *
      * signal_to_deliver deve ser repassado como quarto argumento do ptrace.
      */
-    fprintf(stderr, "erro: TODO Semana 3: implementar resume_until_next_syscall()\n");
-    return -1;
 }
 
 
@@ -183,9 +179,7 @@ static int resume_until_next_syscall(pid_t child, int signal_to_deliver)
      * - com PTRACE_O_TRACESYSGOOD, syscall-stops aparecem com bit 0x80.
      * - paradas SIGTRAP comuns nao devem ser entregues de volta ao filho.
      */
-    fprintf(stderr, "erro: TODO Semana 3: implementar wait_for_syscall_stop()\n");
-    return -1;
-}
+
 
 int trace_program(char *const argv[],
                   trace_observer_fn observer,
