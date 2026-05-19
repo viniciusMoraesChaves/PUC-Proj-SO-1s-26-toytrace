@@ -20,7 +20,16 @@ static void fill_event_from_regs(pid_t pid,
 {
     /*
      * TODO Semana 4:
-     *
+     *struct syscall_event {
+    * pid_t pid;
+    * int entering;              /* 1 na entrada da syscall, 0 na saida 
+    * long syscall_no;
+    * long ret;                  /* valido apenas em eventos de saida 
+   *  unsigned long args[6];     /* argumentos capturados na entrada 
+*   };
+    */ 
+
+ /*
      * Preencha struct syscall_event usando os registradores x86_64.
      *
      * Dicas:
@@ -28,10 +37,27 @@ static void fill_event_from_regs(pid_t pid,
      * - regs->rax contem o retorno, valido na saida.
      * - os seis argumentos ficam em rdi, rsi, rdx, r10, r8 e r9.
      * - ev->entering deve copiar o parametro entering.
-     */
+    */
+
+
     memset(ev, 0, sizeof(*ev));
-    ev->pid = pid;
+    ev -> pid = pid;
+    ev-> args[0] =  regs -> rdi;
+    ev-> args[1] = regs -> rsi;
+    ev -> args[2] = regs ->rdx;
+    ev -> args[3] = regs ->r10;
+    ev -> args{4} = regs -> r8;
+    ev -> args[5] = regs -> r9;
+
+    
     ev->entering = entering;
+    ev-> syscall_no = regs-> orig_rax;
+
+    
+    if(entering == 0 )
+    {
+        ev -> ret = regs -> rax ;
+    }
 }
 
 
@@ -44,7 +70,7 @@ static pid_t launch_tracee(char *const argv[])
 
     if(pid == -1)
     {
-        perror("Erro na criação do processo.")
+        perror("Erro na criação do processo.");
         return -1;
     }
 
@@ -230,6 +256,7 @@ int trace_program(char *const argv[],
             return 0;
         }
 
+
         /*
          * TODO Semana 4:
          *
@@ -237,6 +264,7 @@ int trace_program(char *const argv[],
          * Depois chame fill_event_from_regs() e observer().
          */
         memset(&regs, 0, sizeof(regs));
+        ptrace(PTRACE_GETREGS, child , 0 , &regs);
         fill_event_from_regs(child, entering, &regs, &ev);
         if (observer != NULL) {
             observer(&ev, userdata);
