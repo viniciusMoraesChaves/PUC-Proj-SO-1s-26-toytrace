@@ -8,7 +8,18 @@ void student_debug_raw_event(const struct syscall_event *ev,
                              char *buf,
                              size_t bufsz)
 {
+    printf("syscall %ld", ev -> syscall_no);
+    if(ev -> evening = 1)
+    {
+        printf("evento de entrada\n");
+        return 1;
+    }
+    else {
+        printf("evento de saída\n");
+    }
+    printf("PID de syscall : %d", ev -> pid);
     /*
+    
      * Suporte de depuracao para a Semana 4:
      *
      * Esta funcao existe para inspecionar eventos crus depois que o runtime

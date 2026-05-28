@@ -42,11 +42,11 @@ static void fill_event_from_regs(pid_t pid,
 
     memset(ev, 0, sizeof(*ev));
     ev -> pid = pid;
-    ev-> args[0] =  regs -> rdi;
+    ev-> args[0] = regs-> rdi;
     ev-> args[1] = regs -> rsi;
     ev -> args[2] = regs ->rdx;
     ev -> args[3] = regs ->r10;
-    ev -> args{4} = regs -> r8;
+    ev -> args[4] = regs -> r8;
     ev -> args[5] = regs -> r9;
 
     
