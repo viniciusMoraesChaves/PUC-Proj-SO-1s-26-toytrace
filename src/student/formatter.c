@@ -87,7 +87,7 @@ void student_format_event(const struct syscall_event *ev,
 
         case SYS_openat: {
             char path[4096];
-            if(read_child_string(ev->pid, (void *)ev->args[1], path, sizeof(path)) < 0) {
+            if(read_child_string(ev->pid, ev->args[1], path, sizeof(path)) < 0) {
                 strncpy(path, "<ilegivel>", sizeof(path));
             }
 
@@ -102,7 +102,7 @@ void student_format_event(const struct syscall_event *ev,
 
         case SYS_execve: {
             char path[4096];
-            if(read_child_string(ev->pid, (void *)ev->args[0], path, sizeof(path)) < 0) {
+            if(read_child_string(ev->pid, ev->args[0], path, sizeof(path)) < 0) {
                 strncpy(path, "<ilegivel>", sizeof(path));
             }
 
