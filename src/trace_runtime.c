@@ -8,10 +8,11 @@
 #include <sys/user.h>
 #include <sys/wait.h>
 #include <unistd.h>
-
+#include <stdlib.h>
 #if !defined(__x86_64__)
 #error "Este runtime didatico suporta apenas Linux x86_64."
 #endif
+static unsigned long saved_args[6] = {0};
 
 static void fill_event_from_regs(pid_t pid,
                                  int entering,
@@ -20,7 +21,16 @@ static void fill_event_from_regs(pid_t pid,
 {
     /*
      * TODO Semana 4:
-     *
+     *struct syscall_event {
+     * pid_t pid;
+     * int entering;               1 na entrada da syscall, 0 na saida
+     * long syscall_no;
+     * long ret;                  valido apenas em eventos de saida
+    *  unsigned long args[6];     argumentos capturados na entrada
+    *   };
+    */
+
+    /*
      * Preencha struct syscall_event usando os registradores x86_64.
      *
      * Dicas:
@@ -28,10 +38,20 @@ static void fill_event_from_regs(pid_t pid,
      * - regs->rax contem o retorno, valido na saida.
      * - os seis argumentos ficam em rdi, rsi, rdx, r10, r8 e r9.
      * - ev->entering deve copiar o parametro entering.
-     */
+    */
+
     memset(ev, 0, sizeof(*ev));
+    ev->syscall_no = regs->orig_rax;
+    ev->ret = regs->rax ;
     ev->pid = pid;
     ev->entering = entering;
+    ev->args[0] = regs->rdi;
+    ev->args[1] = regs->rsi;
+    ev->args[2] = regs->rdx;
+    ev->args[3] = regs->r10;
+    ev->args[4] = regs->r8;
+    ev->args[5] = regs->r9;
+
 }
 
 
@@ -39,28 +59,26 @@ static pid_t launch_tracee(char *const argv[])
 
 // FEITO SEMANA 2
 {
-    int status;
     pid_t pid = fork();
 
     if(pid == -1)
     {
-        perror("Erro na criação do processo.")
+        perror("Erro na criação do processo.");
         return -1;
     }
 
     if(pid == 0){
         ptrace(PTRACE_TRACEME,0,NULL,NULL); // sintaxe do comando ptrace, que é chamada por uma trace;
         raise(SIGSTOP);
-        execvp(argv[0],argv);  
+        execvp(argv[0],argv);
 
-        perror("Erro durante a execução do argumento passado");// tratamento de erro na tentativa de execução.
-        exit(1);   // comando para eu sair desse bloco de tratamento,e nao, nao preciso fazer mais um if, da pra fazer nesse mesmo bloco   
+        perror("Erro durante a execução do argumento passado");        // tratamento de erro na tentativa de execução.
+        exit(1);       // comando para eu sair desse bloco de tratamento,e nao, nao preciso fazer mais um if, da pra fazer nesse mesmo bloco
     }
 
     {   //processo pai
         return pid;
     }
-
 }
 
 static int wait_for_initial_stop(pid_t child)
@@ -69,19 +87,18 @@ static int wait_for_initial_stop(pid_t child)
     if (waitpid(child,&status,0) == -1){
         perror("Erro na espera por processo filho");
         return -1;
-    }    
+    }
 
     if(WIFSTOPPED(status))
     {
-        if(WSTOPSIG(status) == SIGSTOP) // verificação se o processo foi parado pela chamada do filho de SIGSTOP 
+        if(WSTOPSIG(status) == SIGSTOP) // verificação se o processo foi parado pela chamada do filho de SIGSTOP
         return 0;
     }
     return -1;
 
     // FEITO
-    
-    /*
 
+    /*
      * TODO Semana 2:
      *
      * O filho chama raise(SIGSTOP) antes de executar o programa alvo.
@@ -93,34 +110,32 @@ static int wait_for_initial_stop(pid_t child)
 
 static int configure_trace_options(pid_t child)
 {
-    int status ;
-    ptrace(PTRACE_SETOPTIONS, child, NULL, PTRACE_O_TRACESYSGOOD);
-    if(WTOPSIG(status))
-    {
-        if(WTOPSIG(status)) == 0 )
-        {
-            //talvez eu tenha que retornar que nao é uma syscall, mas o que manipular aqui?
+    //se SIGTRAP for recebido e o bit 0x80 estiver setado, entao é uma parada de syscall
+    if (ptrace(PTRACE_SETOPTIONS, child, NULL, PTRACE_O_TRACESYSGOOD) == -1) {
+        fprintf(stderr, "erro: TODO Semana 3: implementar configure_trace_options()\n");
+        return -1;
     }
-    }
+    return 0;
+
+    // FEITO
     /*
      * TODO Semana 3:
      *
      * Configure PTRACE_O_TRACESYSGOOD com PTRACE_SETOPTIONS.
      * Isso ajuda a diferenciar paradas de syscall de outros sinais.
      */
-    fprintf(stderr, "erro: TODO Semana 3: implementar configure_trace_options()\n");
-    return -1;
 }
 
 static int resume_until_next_syscall(pid_t child, int signal_to_deliver)
 {
-    int status;
-    ptrace(PTRACE_SYSCALL,child,NULL,signal_to_deliver);
-
-    {
-        
+    if (ptrace(PTRACE_SYSCALL, child, NULL, signal_to_deliver) == -1) {
+        fprintf(stderr, "erro: TODO Semana 3: implementar resume_until_next_syscall()\n");
+        return -1;
     }
-    /*
+    return 0;
+
+    //FEITO
+     /*
      * TODO Semana 3:
      *
      * Use ptrace(PTRACE_SYSCALL, ...) para deixar o filho executar ate a
@@ -128,46 +143,44 @@ static int resume_until_next_syscall(pid_t child, int signal_to_deliver)
      *
      * signal_to_deliver deve ser repassado como quarto argumento do ptrace.
      */
-    fprintf(stderr, "erro: TODO Semana 3: implementar resume_until_next_syscall()\n");
-    return -1;
 }
 
 
     static int wait_for_syscall_stop(pid_t child, int *status)
-{
-    if(waitpid(child,status,0) == -1) // Primeira verificação de erro na espera
     {
-        perror("Erro na espera por processo filho com waipid()");
-        return -1;
-    }
+        while(1)
+    {
+        if(waitpid(child,status,0) == -1) // Primeira verificação de erro na espera
+        {
+            perror("Erro na espera por processo filho com waipid()");
+            return -1;
+        }
 
 
-    if(WIFEXITED(*status)){ // returns true if the child terminated normally ()
-        printf("O filho terminou normalmente sua execução\n");
-        return 0;
-    }
+        if(WIFEXITED(*status)) // returns true if the child terminated normally ()
+        {
+            return 0; // filho terminou sua execução normalmente
+        }
 
-    if(WIFSIGNALED(*status)) 
-    {
-        printf("O filho terminou por conta de um sinal\n");
-        return 0;
-    }
+        if(WIFSIGNALED(*status))
+        {
+            return 0; // O filho terminou por conta de um sinal
+        }
 
-    if(WIFSTOPPED(*status))
-    {
-        printf("Processo esta parado");
-        if(WSTOPSIG(*status) &  0x80)
-    {
-        printf("O processo foi paralisado por conta de uma syscall ");
-        return 1;
-    }
-    return 0;
-  
+        if(WIFSTOPPED(*status))
+        {
+            // processo oficialmente parado
+            if(WSTOPSIG(*status) &  0x80)
+        {
+            return 1;
+        }
+        resume_until_next_syscall(child,0);
+        }
+        
     }
 }
-    
-    
-    /* FEITO 
+
+    /* FEITO
      * TODO Semana 3:
      *
      * Espere o filho com waitpid().
@@ -183,9 +196,6 @@ static int resume_until_next_syscall(pid_t child, int signal_to_deliver)
      * - com PTRACE_O_TRACESYSGOOD, syscall-stops aparecem com bit 0x80.
      * - paradas SIGTRAP comuns nao devem ser entregues de volta ao filho.
      */
-    fprintf(stderr, "erro: TODO Semana 3: implementar wait_for_syscall_stop()\n");
-    return -1;
-}
 
 int trace_program(char *const argv[],
                   trace_observer_fn observer,
@@ -236,6 +246,7 @@ int trace_program(char *const argv[],
             return 0;
         }
 
+
         /*
          * TODO Semana 4:
          *
@@ -243,7 +254,9 @@ int trace_program(char *const argv[],
          * Depois chame fill_event_from_regs() e observer().
          */
         memset(&regs, 0, sizeof(regs));
+        ptrace(PTRACE_GETREGS, child , 0 , &regs);
         fill_event_from_regs(child, entering, &regs, &ev);
+
         if (observer != NULL) {
             observer(&ev, userdata);
         }
