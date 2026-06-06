@@ -5,7 +5,9 @@
 #include <stdio.h>
 #include <sys/syscall.h>
 #include <trace_helpers.h>
+#include <stdint.h>
 
+static char buffer[4096] = {0}; // variavel global para guardar evento de entrada para escrever depois da compilação de execve
 void student_debug_raw_event(const struct syscall_event *ev,
                              char *buf,
                              size_t bufsz)
@@ -31,7 +33,8 @@ void student_debug_raw_event(const struct syscall_event *ev,
      * A pergunta importante da Semana 4 e:
      * por que a mesma syscall aparece duas vezes?
      */
-    snprintf(buf, bufsz, "pid=%d %s %s",
+    
+     snprintf(buf, bufsz, "pid=%d %s %s",
              ev->pid,
              syscall_name(ev->syscall_no),
              ev->entering ? "entrada" : "saida");
@@ -41,7 +44,7 @@ void student_format_event(const struct syscall_event *ev,
                           char *buf,
                           size_t bufsz)
 {
-    /*
+    /* FEITO
      * TODO Semana 5:
      *
      * Primeiro, formate uma syscall completa em uma linha simples.
@@ -56,58 +59,78 @@ void student_format_event(const struct syscall_event *ev,
      * Para caminhos do processo monitorado, use read_child_string().
      * Se a leitura falhar, imprima "<ilegivel>".
      */
-    switch(ev->syscall_no){
+
+    switch(ev->syscall_no) 
+    {
         case SYS_read: {
-            snprintf(buf, bufsz, "read(%ld, %#lx, %lu) = %ld",
-                    (long)ev->args[0],
-                    ev->args[1],
-                    (unsigned long)ev->args[2],
+        char armz_read[4096] = {0};
+        if(ev->ret > 0 && read_child_string(ev->pid, ev->args[1], armz_read, sizeof(armz_read)) >= 0) {
+               snprintf(buf, bufsz, "read(%ld, \"%s\", %lu) = %ld",
+                    ev->args[0],
+                    armz_read,
+                    ev->args[2],
                     ev->ret);
             break;
-        }
+            }
+            snprintf(buf, bufsz, "read(%ld, <ilegivel>, %lu) = %ld",
+                    ev->args[0],
+                    ev->args[2],
+                    ev->ret);
+            break;
+
+    }
 
         case SYS_write: {
-            snprintf(buf, bufsz, "write(%ld, %#lx, %lu) = %ld",
-                    (long)ev->args[0],
-                    ev->args[1],
-                    (unsigned long)ev->args[2],
+        char armz_write[4096] = {0};
+         if(ev->args[2] > 0 && read_child_string(ev->pid, ev->args[1], armz_write, sizeof(armz_write)) >= 0) {
+                    snprintf(buf, bufsz, "write(%ld, \"%s\", %lu) = %ld",
+                    ev->args[0],
+                    armz_write,
+                    ev->args[2],
                     ev->ret);
             break;
-        }
+            }
+            snprintf(buf, bufsz, "write(%ld, <ilegivel>, %lu) = %ld",
+                    ev->args[0],
+                    ev->args[2],
+                    ev->ret);
+            break;
+
+    }
 
         case SYS_openat: {
-            char path[4096];
-            if(read_child_string(ev->pid, (void *)ev->args[1], path, sizeof(path)) < 0) {
-                strncpy(path, "<ilegivel>", sizeof(path));
+            char path[4096] = {0};
+            if(read_child_string(ev->pid, ev->args[1], path, sizeof(path)) >= 0) {
+                snprintf(buf, bufsz, "openat(%ld, \"%s\", %#lx, %#lx) = %ld",
+                    ev->args[0],
+                    path,
+                    ev->args[2],
+                    ev->args[3],
+                    ev->ret);
+            break;
             }
 
-            snprintf(buf, bufsz, "openat(%ld, \"%s\", %#lx, %#lx) = %ld",
-                    (long)ev->args[0],
-                    path,
+            snprintf(buf, bufsz, "openat(%ld, <ilegivel>, %#lx, %#lx) = %ld",
+                    ev->args[0],
                     ev->args[2],
                     ev->args[3],
                     ev->ret);
             break;
         }
 
-        case SYS_execve: {
-            char path[4096];
-            if(read_child_string(ev->pid, (void *)ev->args[0], path, sizeof(path)) < 0) {
-                strncpy(path, "<ilegivel>", sizeof(path));
+case SYS_execve: {
+        if(read_child_string(ev->pid, ev->args[0], buffer, sizeof(buffer)) >= 0) {
+                snprintf(buf, bufsz, "execve(\"%s\",...) = %ld", buffer, ev->ret);
+                break;
             }
-
-            snprintf(buf, bufsz, "execve(\"%s\", ...) = %ld",
-                    path,
-                    ev->ret);
+            snprintf(buf, bufsz, "execve(<ilegivel>,...) = %ld",ev->ret);
             break;
         }
 
         case SYS_exit_group: {
-            snprintf(buf, bufsz, "exit_group(%ld) = %ld",
-                    (long)ev->args[0],
-                    ev->ret);
+            snprintf(buf, bufsz, "exit_group(%ld) = %ld",ev->args[0],ev->ret);
             break;
-        }
+    }
 
         default:
             snprintf(buf, bufsz, "%s(%#lx, %#lx, %#lx, %#lx, %#lx, %#lx) = %ld",
@@ -122,3 +145,5 @@ void student_format_event(const struct syscall_event *ev,
         break;
     }
 }
+
+
