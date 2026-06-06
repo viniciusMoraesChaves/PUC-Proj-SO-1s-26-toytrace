@@ -196,6 +196,10 @@ static int resume_until_next_syscall(pid_t child, int signal_to_deliver)
      * - com PTRACE_O_TRACESYSGOOD, syscall-stops aparecem com bit 0x80.
      * - paradas SIGTRAP comuns nao devem ser entregues de volta ao filho.
      */
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9da01dba45efa9d0c68d972f217c6cec07983fc4
 
 int trace_program(char *const argv[],
                   trace_observer_fn observer,
