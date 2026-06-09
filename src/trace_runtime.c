@@ -39,19 +39,26 @@ static void fill_event_from_regs(pid_t pid,
      * - os seis argumentos ficam em rdi, rsi, rdx, r10, r8 e r9.
      * - ev->entering deve copiar o parametro entering.
     */
-
     memset(ev, 0, sizeof(*ev));
     ev->syscall_no = regs->orig_rax;
-    ev->ret = regs->rax ;
+    ev->ret = regs->rax;
     ev->pid = pid;
     ev->entering = entering;
-    ev->args[0] = regs->rdi;
-    ev->args[1] = regs->rsi;
-    ev->args[2] = regs->rdx;
-    ev->args[3] = regs->r10;
-    ev->args[4] = regs->r8;
-    ev->args[5] = regs->r9;
 
+    if (entering) {
+        saved_args[0] = regs->rdi;
+        saved_args[1] = regs->rsi;
+        saved_args[2] = regs->rdx;
+        saved_args[3] = regs->r10;
+        saved_args[4] = regs->r8;
+        saved_args[5] = regs->r9;
+    }
+    ev->args[0] = saved_args[0];
+    ev->args[1] = saved_args[1];
+    ev->args[2] = saved_args[2];
+    ev->args[3] = saved_args[3];
+    ev->args[4] = saved_args[4];
+    ev->args[5] = saved_args[5];
 }
 
 
@@ -196,10 +203,6 @@ static int resume_until_next_syscall(pid_t child, int signal_to_deliver)
      * - com PTRACE_O_TRACESYSGOOD, syscall-stops aparecem com bit 0x80.
      * - paradas SIGTRAP comuns nao devem ser entregues de volta ao filho.
      */
-<<<<<<< HEAD
-=======
-
->>>>>>> 9da01dba45efa9d0c68d972f217c6cec07983fc4
 
 int trace_program(char *const argv[],
                   trace_observer_fn observer,
