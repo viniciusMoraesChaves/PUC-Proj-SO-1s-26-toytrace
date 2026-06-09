@@ -7,7 +7,7 @@
 #include <trace_helpers.h>
 #include <stdint.h>
 
-static char buffer[4096] = {0}; // variavel global para guardar evento de entrada para escrever depois da compilação de execve
+
 void student_debug_raw_event(const struct syscall_event *ev,
                              char *buf,
                              size_t bufsz)
@@ -33,7 +33,7 @@ void student_debug_raw_event(const struct syscall_event *ev,
      * A pergunta importante da Semana 4 e:
      * por que a mesma syscall aparece duas vezes?
      */
-    
+
      snprintf(buf, bufsz, "pid=%d %s %s",
              ev->pid,
              syscall_name(ev->syscall_no),
@@ -64,7 +64,7 @@ void student_format_event(const struct syscall_event *ev,
     {
         case SYS_read: {
         char armz_read[4096] = {0};
-        if(ev->ret > 0 && read_child_string(ev->pid, ev->args[1], armz_read, sizeof(armz_read)) >= 0) {
+        if(read_child_string(ev->pid, ev->args[1], armz_read, sizeof(armz_read)) >= 0) {
                snprintf(buf, bufsz, "read(%ld, \"%s\", %lu) = %ld",
                     ev->args[0],
                     armz_read,
@@ -82,7 +82,7 @@ void student_format_event(const struct syscall_event *ev,
 
         case SYS_write: {
         char armz_write[4096] = {0};
-         if(ev->args[2] > 0 && read_child_string(ev->pid, ev->args[1], armz_write, sizeof(armz_write)) >= 0) {
+         if(read_child_string(ev->pid, ev->args[1], armz_write, sizeof(armz_write)) >= 0) {
                     snprintf(buf, bufsz, "write(%ld, \"%s\", %lu) = %ld",
                     ev->args[0],
                     armz_write,
@@ -118,13 +118,11 @@ void student_format_event(const struct syscall_event *ev,
             break;
         }
 
-case SYS_execve: {
-        if(read_child_string(ev->pid, ev->args[0], buffer, sizeof(buffer)) >= 0) {
-                snprintf(buf, bufsz, "execve(\"%s\",...) = %ld", buffer, ev->ret);
-                break;
-            }
-            snprintf(buf, bufsz, "execve(<ilegivel>,...) = %ld",ev->ret);
-            break;
+        case SYS_execve: 
+        {
+                const char *path_execve = (const char *)ev->args[0];
+                snprintf(buf, bufsz, "execve(\"%s\",...) = %ld", path_execve, ev->ret);
+                 break;
         }
 
         case SYS_exit_group: {
