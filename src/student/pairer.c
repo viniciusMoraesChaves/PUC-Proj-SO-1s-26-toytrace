@@ -31,6 +31,5 @@ int student_pair_syscall(struct syscall_pairer *pairer,
         pairer->has_entry = 0;
         return 1;
     }
-    *out = *ev;
-    return 1;
+    return -1;
 }
