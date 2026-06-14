@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <sys/syscall.h>
 #include <trace_helpers.h>
-#include <stdint.h>
 
 
 void student_debug_raw_event(const struct syscall_event *ev,
@@ -22,6 +21,7 @@ void student_format_event(const struct syscall_event *ev,
                           char *buf,
                           size_t bufsz)
 {
+
     switch(ev->syscall_no) 
     {
         case SYS_read: {
@@ -34,14 +34,12 @@ void student_format_event(const struct syscall_event *ev,
                     ev->ret);
             break;
             }
-            snprintf(buf, bufsz, "read(%ld, <ilegivel>, %lu) = %ld",
+           snprintf(buf, bufsz, "read(%ld, <ilegivel>, %lu) = %ld",
                     ev->args[0],
                     ev->args[2],
                     ev->ret);
             break;
-
-        }
-
+           }
         case SYS_write: {
         char armz_write[4096] = {0};
          if(read_child_string(ev->pid, ev->args[1], armz_write, sizeof(armz_write)) >= 0) {
@@ -52,13 +50,14 @@ void student_format_event(const struct syscall_event *ev,
                     ev->ret);
             break;
             }
-            snprintf(buf, bufsz, "write(%ld, <ilegivel>, %lu) = %ld",
+
+        snprintf(buf, bufsz, "write(%ld, <ilegivel>, %lu) = %ld",
                     ev->args[0],
                     ev->args[2],
                     ev->ret);
             break;
 
-        }
+    }
 
         case SYS_openat: {
             char path[4096] = {0};
@@ -90,7 +89,7 @@ void student_format_event(const struct syscall_event *ev,
         case SYS_exit_group: {
             snprintf(buf, bufsz, "exit_group(%ld) = %ld",ev->args[0],ev->ret);
             break;
-        }
+    }
 
         default:
             snprintf(buf, bufsz, "%s(%#lx, %#lx, %#lx, %#lx, %#lx, %#lx) = %ld",
@@ -105,5 +104,7 @@ void student_format_event(const struct syscall_event *ev,
         break;
     }
 }
+
+
 
 
