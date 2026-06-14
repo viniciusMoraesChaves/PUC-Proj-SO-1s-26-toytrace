@@ -21,28 +21,42 @@ static void fill_event_from_regs(pid_t pid,
 {
     memset(ev, 0, sizeof(*ev));
     ev->syscall_no = regs->orig_rax;
-    ev->ret = regs->rax;
     ev->pid = pid;
     ev->entering = entering;
 
     if (entering) {
-        saved_args[0] = regs->rdi;
-        saved_args[1] = regs->rsi;
-        saved_args[2] = regs->rdx;
-        saved_args[3] = regs->r10;
-        saved_args[4] = regs->r8;
-        saved_args[5] = regs->r9;
+        ev->args[0] = regs->rdi;
+        ev->args[1] = regs->rsi;
+        ev->args[2] = regs->rdx;
+        ev->args[3] = regs->r10;
+        ev->args[4] = regs->r8;
+        ev->args[5] = regs->r9;
+
+        saved_args[0] = ev->args[0];
+        saved_args[1] = ev->args[1];
+        saved_args[2] = ev->args[2];
+        saved_args[3] = ev->args[3];
+        saved_args[4] = ev->args[4];
+        saved_args[5] = ev->args[5];
+
+        ev->ret = 0;
+
     }
+    else
+    {
     ev->args[0] = saved_args[0];
     ev->args[1] = saved_args[1];
     ev->args[2] = saved_args[2];
     ev->args[3] = saved_args[3];
     ev->args[4] = saved_args[4];
     ev->args[5] = saved_args[5];
+    ev->ret = regs->rax;
+    }
 }
 
 
 static pid_t launch_tracee(char *const argv[])
+
 {
     pid_t pid = fork();
 
@@ -53,15 +67,15 @@ static pid_t launch_tracee(char *const argv[])
     }
 
     if(pid == 0){
-        ptrace(PTRACE_TRACEME,0,NULL,NULL);
+        ptrace(PTRACE_TRACEME,0,NULL,NULL); 
         raise(SIGSTOP);
         execvp(argv[0],argv);
 
-        perror("Erro durante a execução do argumento passado"); 
-        exit(1); 
+        perror("Erro durante a execução do argumento passado");     
+        exit(1);       
     }
 
-    {
+    {   
         return pid;
     }
 }
@@ -76,7 +90,7 @@ static int wait_for_initial_stop(pid_t child)
 
     if(WIFSTOPPED(status))
     {
-        if(WSTOPSIG(status) == SIGSTOP)
+        if(WSTOPSIG(status) == SIGSTOP) 
         return 0;
     }
     return -1;
@@ -100,7 +114,6 @@ static int resume_until_next_syscall(pid_t child, int signal_to_deliver)
         return -1;
     }
     return 0;
-
 }
 
 
@@ -108,21 +121,21 @@ static int resume_until_next_syscall(pid_t child, int signal_to_deliver)
     {
         while(1)
     {
-        if(waitpid(child,status,0) == -1)
+        if(waitpid(child,status,0) == -1) 
         {
             perror("Erro na espera por processo filho com waipid()");
             return -1;
         }
 
 
-        if(WIFEXITED(*status))
+        if(WIFEXITED(*status)) 
         {
-            return 0;
+            return 0; 
         }
 
         if(WIFSIGNALED(*status))
         {
-            return 0;
+            return 0; 
         }
 
         if(WIFSTOPPED(*status))
@@ -136,6 +149,7 @@ static int resume_until_next_syscall(pid_t child, int signal_to_deliver)
         
     }
 }
+
 
 int trace_program(char *const argv[],
                   trace_observer_fn observer,
@@ -185,6 +199,7 @@ int trace_program(char *const argv[],
             }
             return 0;
         }
+
 
         memset(&regs, 0, sizeof(regs));
         ptrace(PTRACE_GETREGS, child , 0 , &regs);
