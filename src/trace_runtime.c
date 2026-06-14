@@ -100,7 +100,6 @@ static int wait_for_initial_stop(pid_t child)
 static int configure_trace_options(pid_t child)
 {
     if (ptrace(PTRACE_SETOPTIONS, child, NULL, PTRACE_O_TRACESYSGOOD) == -1) {
-        fprintf(stderr, "erro: TODO Semana 3: implementar configure_trace_options()\n");
         return -1;
     }
     return 0;
@@ -110,7 +109,6 @@ static int configure_trace_options(pid_t child)
 static int resume_until_next_syscall(pid_t child, int signal_to_deliver)
 {
     if (ptrace(PTRACE_SYSCALL, child, NULL, signal_to_deliver) == -1) {
-        fprintf(stderr, "erro: TODO Semana 3: implementar resume_until_next_syscall()\n");
         return -1;
     }
     return 0;
@@ -123,7 +121,7 @@ static int resume_until_next_syscall(pid_t child, int signal_to_deliver)
     {
         if(waitpid(child,status,0) == -1) 
         {
-            perror("Erro na espera por processo filho com waipid()");
+            perror("Erro na espera por processo filho com waitpid()");
             return -1;
         }
 
