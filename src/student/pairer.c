@@ -3,13 +3,15 @@
 #include <stdio.h>
 #include <sys/syscall.h>
 #include <trace_helpers.h>
-#include <stdint.h>
 
 int student_pair_syscall(struct syscall_pairer *pairer,
                          const struct syscall_event *ev,
                          struct syscall_event *out)
 {
-   if (ev->entering) {
+    if (ev->entering) {
+        if(pairer->has_entry){
+            return -1;
+        }
     pairer->entry = *ev;
     pairer->has_entry = 1;
 
